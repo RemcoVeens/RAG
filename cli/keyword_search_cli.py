@@ -2,24 +2,9 @@
 
 import argparse
 import json
-import string
-from dataclasses import dataclass
 
-from nltk.stem import PorterStemmer
+from src import InvertedIndex, Movie, search
 
-
-@dataclass
-class Movie:
-    id: int
-    title: str
-    description: str
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        return cls(id=data["id"], title=data["title"], description=data["description"])
-def prep_input(input:str)->str:
-    temp = input.lower().strip(string.punctuation).replace(",","")
-    return temp
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -28,29 +13,26 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
 
+    _ = subparsers.add_parser("build", help="builds movies inverted index")
     args = parser.parse_args()
 
+    movies = [Movie.from_dict(movie) for movie in json.load(open("data/movies.json", "r"))["movies"]]
     match args.command:
         case "search":
             query:str = args.query
-            print(f"Searching for: {query}")
+            search(movies, query)
+            return
+        case "build":
+            ii = InvertedIndex()
+            ii.build(movies)
+            ii.save()
+            docs = ii.get_documents("merida")
+            print(f"First document for token 'merida' = {docs[0]}")
+            return
         case _:
             parser.print_help()
             return
-    movies = [Movie.from_dict(movie) for movie in json.load(open("data/movies.json", "r"))["movies"]]
-    matches:list[Movie] = []
-    stemmer = PorterStemmer()
-    with open("data/stopwords.txt", "r") as f:
-        stopwords:list[str] = f.read().splitlines()
-    tokens = query.split()
-    tokens = [token for token in tokens if token not in stopwords]
-    for token in tokens:
-        for movie in movies:
-            if stemmer.stem(token) in prep_input(movie.title):
-                if movie not in matches:
-                    matches.append(movie)
-    for movie in matches:
-        print(f"{movie.id}. {movie.title}")
+
 
 if __name__ == "__main__":
     from datetime import datetime
