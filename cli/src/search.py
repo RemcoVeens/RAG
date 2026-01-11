@@ -23,6 +23,9 @@ def search(ii:InvertedIndex, query:str, movies:Movies):
         movies_for_stem = ii.get_documents(stemmed_token)
         if movies_for_stem:
             matches_found.update(movies_for_stem)
-    matches = [movies.from_id(movie_id) for movie_id in sorted(matches_found)][:10]
+    matches = [
+        movies.from_id(movie_id)
+        for movie_id in sorted(matches_found)
+        ][:10]
     for movie in matches:
         print(f"{movie.id}. {movie.title}")

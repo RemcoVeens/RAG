@@ -11,9 +11,14 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
-    search_parser.add_argument("query", type=str, help="Search query")
+    _= search_parser.add_argument("query", type=str, help="Search query")
 
     _ = subparsers.add_parser("build", help="builds movies inverted index")
+
+    tf = subparsers.add_parser("tf", help="counting tokens")
+    _= tf.add_argument("doc_id", type=int, help="Document ID to calculate term frequency")
+    _= tf.add_argument("token", type=str, help="Token to calculate term frequency")
+
     args = parser.parse_args()
 
     movies = [Movie.from_dict(movie) for movie in json.load(open("data/movies.json", "r"))["movies"]]
@@ -33,8 +38,18 @@ def main() -> None:
             ii = InvertedIndex()
             ii.build(movies)
             ii.save()
-            # docs = ii.get_documents("merida")
-            # print(f"First document for token 'merida' = {docs[0]}")
+            return
+        case "tf":
+            ii = InvertedIndex()
+            try:
+                ii.load()
+            except FileNotFoundError:
+                print("Inverted index not found. Please build it first.")
+                return
+            doc_id:int = args.doc_id
+            token:str = args.token
+            tf = ii.get_tf(doc_id, token)
+            print(f"Term frequency of '{token}' in document {doc_id}: {tf}")
             return
         case _:
             parser.print_help()
