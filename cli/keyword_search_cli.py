@@ -3,7 +3,7 @@
 import argparse
 import json
 
-from src import InvertedIndex, Movie, search
+from src import InvertedIndex, Movies, Movie, search
 
 
 def main() -> None:
@@ -17,17 +17,24 @@ def main() -> None:
     args = parser.parse_args()
 
     movies = [Movie.from_dict(movie) for movie in json.load(open("data/movies.json", "r"))["movies"]]
+    MVS = Movies(movies)
     match args.command:
         case "search":
+            ii = InvertedIndex()
+            try:
+                ii.load()
+            except FileNotFoundError:
+                print("Inverted index not found. Please build it first.")
+                return
             query:str = args.query
-            search(movies, query)
+            search(ii, query, MVS)
             return
         case "build":
             ii = InvertedIndex()
             ii.build(movies)
             ii.save()
-            docs = ii.get_documents("merida")
-            print(f"First document for token 'merida' = {docs[0]}")
+            # docs = ii.get_documents("merida")
+            # print(f"First document for token 'merida' = {docs[0]}")
             return
         case _:
             parser.print_help()
