@@ -3,7 +3,7 @@
 import argparse
 import json
 
-from src import InvertedIndex, Movie, Movies, search
+from src import InvertedIndex, Movie, Movies, commands, search
 
 
 def main() -> None:
@@ -22,52 +22,27 @@ def main() -> None:
     idf = subparsers.add_parser("idf", help="calculating inverse document frequency")
     _= idf.add_argument("term", type=str, help="Token to calculate inverse document frequency")
 
+    tfidf = subparsers.add_parser("tfidf", help="calculating term frequency inverse document frequency")
+    _= tfidf.add_argument("doc_id", type=int, help="Document ID to calculate term frequency inverse document frequency")
+    _= tfidf.add_argument("token", type=str, help="Token to calculate term frequency inverse document frequency")
+
     args = parser.parse_args()
 
     movies = [Movie.from_dict(movie) for movie in json.load(open("data/movies.json", "r"))["movies"]]
     MVS = Movies(movies)
     match args.command:
         case "search":
-            ii = InvertedIndex()
-            try:
-                ii.load()
-            except FileNotFoundError:
-                print("Inverted index not found. Please build it first.")
-                return
-            query:str = args.query
-            search(ii, query, MVS)
-            return
+            commands.command_search(args.query, MVS)
         case "build":
-            ii = InvertedIndex()
-            ii.build(movies)
-            ii.save()
-            return
+            commands.command_build(movies)
         case "tf":
-            ii = InvertedIndex()
-            try:
-                ii.load()
-            except FileNotFoundError:
-                print("Inverted index not found. Please build it first.")
-                return
-            doc_id:int = args.doc_id
-            token:str = args.token
-            tf = ii.get_tf(doc_id, token)
-            print(f"Term frequency of '{token}' in document {doc_id}: {tf}")
-            return
+            commands.command_tf(args.doc_id, args.token)
         case "idf":
-            ii = InvertedIndex()
-            try:
-                ii.load()
-            except FileNotFoundError:
-                print("Inverted index not found. Please build it first.")
-                return
-            term:str = args.term
-            idf = ii.get_idf(term)
-            print(f"Inverse document frequency of '{term}': {idf:.2f}")
-            return
+            commands.command_idf(args.term)
+        case "tfidf":
+            commands.command_tfidf(args.doc_id, args.token)
         case _:
             parser.print_help()
-            return
 
 
 if __name__ == "__main__":

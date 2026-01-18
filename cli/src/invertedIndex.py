@@ -96,6 +96,12 @@ class InvertedIndex:
         term_doc_count = len(self.index[token])
         return math.log((doc_count + 1) / (term_doc_count + 1))
 
+    def get_tfidf(self, doc_id:int, token:str) -> float:
+        tf = self.get_tf(doc_id, token)
+        idf = self.get_idf(token)
+        return tf * idf
+
+
     def build(self, movies:list[Movie]):
         """
         Populates the index and docmap using a list of movie dictionaries.
