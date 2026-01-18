@@ -40,7 +40,7 @@ def command_idf(token:str):
     if ii is None:
         return
     idf = ii.get_idf(token)
-    print(f"Inverse document frequency of '{token}': {idf}")
+    print(f"Inverse document frequency of '{token}': {idf:.2f}")
     return
 
 def command_tfidf(doc_id:int, token:str):

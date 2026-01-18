@@ -2,11 +2,15 @@
 
 import argparse
 import json
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src import InvertedIndex, Movie, Movies, commands, search
 
 
-def main() -> None:
+def get_parser():
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -25,9 +29,13 @@ def main() -> None:
     tfidf = subparsers.add_parser("tfidf", help="calculating term frequency inverse document frequency")
     _= tfidf.add_argument("doc_id", type=int, help="Document ID to calculate term frequency inverse document frequency")
     _= tfidf.add_argument("token", type=str, help="Token to calculate term frequency inverse document frequency")
+    return parser
 
-    args = parser.parse_args()
 
+
+def main(args:argparse.ArgumentParser|None=None) -> None:
+    parser = get_parser()
+    args = parser.parse_args(args)
     movies = [Movie.from_dict(movie) for movie in json.load(open("data/movies.json", "r"))["movies"]]
     MVS = Movies(movies)
     match args.command:
