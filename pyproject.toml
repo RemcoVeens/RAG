@@ -24,3 +24,9 @@ ignore = []
 reportImplicitOverride = "none"
 reportPrivateLocalImportUsage = "none"
 reportUnannotatedClassAttribute = "none"
+
+[tool.pytest.ini_options]
+minversion = "8.3"
+testpaths = ["tests"]
+addopts = "-vvv -x"
+filterwarnings = "ignore::DeprecationWarning"

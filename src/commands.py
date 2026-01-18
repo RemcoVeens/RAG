@@ -1,6 +1,4 @@
-from src.classes import Movie, Movies
-from src.invertedIndex import InvertedIndex
-from src.search import search
+from src import InvertedIndex, Movie, Movies, Settings, search
 
 
 def load_InvertedIndex():
@@ -13,21 +11,23 @@ def load_InvertedIndex():
     return ii
 
 
-def command_search(query:str, movies:Movies):
+def command_search(query: str, movies: Movies):
     ii = load_InvertedIndex()
     if ii is None:
         return
     search(ii, query, movies)
     return
 
-def command_build(movies:list[Movie]):
+
+def command_build(movies: list[Movie]):
     ii = InvertedIndex()
     ii.build(movies)
     ii.save()
     print("Inverted index built and saved.")
     return
 
-def command_tf(doc_id:int, token:str):
+
+def command_tf(doc_id: int, token: str):
     ii = load_InvertedIndex()
     if ii is None:
         return
@@ -35,7 +35,8 @@ def command_tf(doc_id:int, token:str):
     print(f"Term frequency of '{token}' in document {doc_id}: {tf}")
     return
 
-def command_idf(token:str):
+
+def command_idf(token: str):
     ii = load_InvertedIndex()
     if ii is None:
         return
@@ -43,10 +44,29 @@ def command_idf(token:str):
     print(f"Inverse document frequency of '{token}': {idf:.2f}")
     return
 
-def command_tfidf(doc_id:int, token:str):
+
+def command_tfidf(doc_id: int, token: str):
     ii = load_InvertedIndex()
     if ii is None:
         return
     tfidf = ii.get_tfidf(doc_id, token)
     print(f"TF-IDF score of '{token}' in document '{doc_id}': {tfidf:.2f}")
     return
+
+
+def command_bm25idf(term: str) -> float | None:
+    ii = load_InvertedIndex()
+    if ii is None:
+        return
+    bm25idf = ii.get_bm25_idf(term)
+    print(f"BM25 IDF score of '{term}': {bm25idf:.2f}")
+    return bm25idf
+
+
+def command_bm25tf(doc_id: int, term: str, k1: float = Settings.BM25_K1) -> float | None:
+    ii = load_InvertedIndex()
+    if ii is None:
+        return
+    bm25tf = ii.get_bm25_tf(doc_id, term, k1)
+    print(f"BM25 TF score of '{term}' in document '{doc_id}': {bm25tf:.2f}")
+    return bm25tf
