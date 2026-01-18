@@ -1,22 +1,41 @@
+import math
 import os
-from tqdm import tqdm
 import pickle
 import string
-from pathlib import Path
-from nltk.stem import PorterStemmer
 from collections import Counter
+from pathlib import Path
+
+from nltk.stem import PorterStemmer
 from src.classes import Movie
+from tqdm import tqdm
 
-stemmer = PorterStemmer()
 
-def tokenize(input:str)->list[str]:
-    tokens:list[str] =[]
-    tks = input.lower().split()
-    for token in tks:
-        t = token.strip(string.punctuation)
-        tokens.append(str(stemmer.stem(t)))
+def load_stopwords() -> list[str]:
+    with open("data/stopwords.txt", "r") as f:
+        return f.read().splitlines()
 
-    return tokens
+def preprocess_text(text: str) -> str:
+    text = text.lower()
+    text = text.translate(str.maketrans("", "", string.punctuation))
+    return text
+
+def tokenize(text:str)->list[str]:
+    text = preprocess_text(text)
+    tokens = text.split()
+    valid_tokens:list[str] = []
+    for token in tokens:
+        if token:
+            valid_tokens.append(token)
+    stop_words = load_stopwords()
+    filtered_words:list[str] = []
+    for word in valid_tokens:
+        if word not in stop_words:
+            filtered_words.append(word)
+    stemmer = PorterStemmer()
+    stemmed_words:list[str] = []
+    for word in filtered_words:
+        stemmed_words.append(stemmer.stem(word))
+    return stemmed_words
 
 class InvertedIndex:
     def __init__(self):
@@ -25,8 +44,7 @@ class InvertedIndex:
         self.cache_folder = Path("cache")
         self.stemmer = PorterStemmer()
         self.counter:Counter[str] = Counter()
-        with open("data/stopwords.txt", "r") as f:
-            self.stopwords:list[str] = f.read().splitlines()
+        self.stopwords = load_stopwords()
 
     def __add_document(self, doc_id:int, text:str):
         """
@@ -52,7 +70,10 @@ class InvertedIndex:
         doc_ids = self.index.get(term, set())
         return sorted(list(doc_ids))
 
-    def get_tf(self, doc_id:int, term:str):
+    def get_tf(self, doc_id:int, term:str)->int:
+        """
+        Returns the term frequency of the term in the document.
+        """
         tokens = tokenize(term)
         if len(tokens) != 1:
             raise ValueError("Term must contain exactly one token")
@@ -65,6 +86,15 @@ class InvertedIndex:
         for word in combined:
             ctr[word] += 1
         return ctr[token]
+
+    def get_idf(self, term: str) -> float:
+        tokens = tokenize(term)
+        if len(tokens) != 1:
+            raise ValueError("term must be a single token")
+        token = tokens[0]
+        doc_count = len(self.docmap)
+        term_doc_count = len(self.index[token])
+        return math.log((doc_count + 1) / (term_doc_count + 1))
 
     def build(self, movies:list[Movie]):
         """

@@ -3,7 +3,7 @@
 import argparse
 import json
 
-from src import InvertedIndex, Movies, Movie, search
+from src import InvertedIndex, Movie, Movies, search
 
 
 def main() -> None:
@@ -18,6 +18,9 @@ def main() -> None:
     tf = subparsers.add_parser("tf", help="counting tokens")
     _= tf.add_argument("doc_id", type=int, help="Document ID to calculate term frequency")
     _= tf.add_argument("token", type=str, help="Token to calculate term frequency")
+
+    idf = subparsers.add_parser("idf", help="calculating inverse document frequency")
+    _= idf.add_argument("term", type=str, help="Token to calculate inverse document frequency")
 
     args = parser.parse_args()
 
@@ -50,6 +53,17 @@ def main() -> None:
             token:str = args.token
             tf = ii.get_tf(doc_id, token)
             print(f"Term frequency of '{token}' in document {doc_id}: {tf}")
+            return
+        case "idf":
+            ii = InvertedIndex()
+            try:
+                ii.load()
+            except FileNotFoundError:
+                print("Inverted index not found. Please build it first.")
+                return
+            term:str = args.term
+            idf = ii.get_idf(term)
+            print(f"Inverse document frequency of '{term}': {idf:.2f}")
             return
         case _:
             parser.print_help()
