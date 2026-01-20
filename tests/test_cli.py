@@ -19,9 +19,12 @@ commands = [
     ["bm25idf grizzly", "5.55"],
     ["bm25idf actor", "3.29"],
     ["bm25idf love", "0.95"],
-    ["bm25tf 1 anbuselvan", "2.31"],
-    ["bm25tf 1 maya", "2.17"],
-    ["bm25tf 1 police", "2.00"],
+    ["bm25tf 1 anbuselvan", "2.35"],
+    ["bm25tf 1 police", "2.09"],
+    ["bm25tf 1 maya", "2.24"],
+    ["bm25tf 1 cheese", "0.00"],
+    ["bm25search 'love story'", "The Inner Life of Martin Frost\n4.60\nDefinitely, Maybe\n4.51\nCama de Gato\n4.40"],
+    ["bm25search 'animated family'", "Gakuen Alice\n7.35\nDay of the Animals\n7.14\nFantastic Mr. Fox\n6.91"],
 ]
 
 
@@ -35,4 +38,8 @@ def test(command: list[str]):
     captured_output = f.getvalue()
     if output:
         print(captured_output)
-        assert output in captured_output
+        if "\n" not in output:
+            assert output in captured_output
+        else:
+            for line in output.split("\n"):
+                assert line in captured_output

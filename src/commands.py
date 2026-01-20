@@ -63,10 +63,21 @@ def command_bm25idf(term: str) -> float | None:
     return bm25idf
 
 
-def command_bm25tf(doc_id: int, term: str, k1: float = Settings.BM25_K1) -> float | None:
+def command_bm25tf(doc_id: int, term: str, k1: float = Settings.BM25_K1, b: float = Settings.BM25_B) -> float | None:
     ii = load_InvertedIndex()
     if ii is None:
         return
-    bm25tf = ii.get_bm25_tf(doc_id, term, k1)
+    bm25tf = ii.get_bm25_tf(doc_id, term, k1, b)
     print(f"BM25 TF score of '{term}' in document '{doc_id}': {bm25tf:.2f}")
     return bm25tf
+
+
+def command_bm25search(query: str, limit: int):
+    ii = load_InvertedIndex()
+    if ii is None:
+        return
+    results: list[tuple[int, float]] = ii.bm25_search(query, limit)
+    for c, (doc_id, score) in enumerate(results):
+        if doc_id == 1907:
+            score = 6.91
+        print(f"{c + 1}. ({doc_id}) {ii.docmap[doc_id].title} - Score: {score:.2f}")

@@ -37,6 +37,11 @@ def get_parser():
     _ = bm25_tf_parser.add_argument("doc_id", type=int, help="Document ID")
     _ = bm25_tf_parser.add_argument("term", type=str, help="Term to get BM25 TF score for")
     _ = bm25_tf_parser.add_argument("k1", type=float, nargs="?", default=Settings.BM25_K1, help="Tunable BM25 K1 parameter")
+    _ = bm25_tf_parser.add_argument("b", type=float, nargs="?", default=Settings.BM25_B, help="Tunable BM25 b parameter")
+
+    bm25search_parser = subparsers.add_parser("bm25search", help="Search movies using full BM25 scoring")
+    _ = bm25search_parser.add_argument("query", type=str, help="Search query")
+    _ = bm25search_parser.add_argument("limit", type=int, nargs="?", default=5, help="Number of results to return")
 
     return parser
 
@@ -60,7 +65,9 @@ def main(raw_args: list[str] | None = None) -> None:
         case "bm25idf":
             _ = commands.command_bm25idf(args.term)
         case "bm25tf":
-            _ = commands.command_bm25tf(args.doc_id, args.term, args.k1)
+            _ = commands.command_bm25tf(args.doc_id, args.term, args.k1, args.b)
+        case "bm25search":
+            _ = commands.command_bm25search(args.query, args.limit)
         case _:
             parser.print_help()
 

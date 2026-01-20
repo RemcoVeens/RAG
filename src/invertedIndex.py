@@ -48,6 +48,7 @@ class InvertedIndex:
         self.cache_folder = Path("cache")
         self.stemmer = PorterStemmer()
         self.counter: Counter[str] = Counter()
+        self.doc_lengths: dict[int, int] = {}
         self.stopwords = load_stopwords()
 
     def __add_document(self, doc_id: int, text: str):
@@ -60,11 +61,19 @@ class InvertedIndex:
             if token not in self.stopwords and token != "":
                 tokens.append(token)
                 self.counter[token] += 1
-
+        self.doc_lengths[doc_id] = len(tokens)
         for token in tokens:
             if token not in self.index:
                 self.index[token] = set()
             self.index[token].add(doc_id)
+
+    def __get_avg_doc_length(self) -> float:
+        total_tokens = 0.0
+        if len(self.doc_lengths) == 0:
+            return 0.0
+        for _, value in self.doc_lengths.items():
+            total_tokens += value
+        return total_tokens / len(self.doc_lengths)
 
     def get_documents(self, term: str) -> list[int]:
         """
@@ -123,10 +132,27 @@ class InvertedIndex:
         bm25_idf = math.log((N - df + 0.5) / (df + 0.5) + 1)
         return bm25_idf
 
-    def get_bm25_tf(self, doc_id: int, term: str, k1: float = Settings.BM25_K1):
+    def get_bm25_tf(self, doc_id: int, term: str, k1: float = Settings.BM25_K1, b: float = Settings.BM25_B):
         tf = self.get_tf(doc_id, term)
-        bm25 = (tf * (k1 + 1)) / (tf + k1)
-        return bm25
+        length_norm = 1 - b + b * (self.doc_lengths[doc_id] / self.__get_avg_doc_length())
+        tf_component = (tf * (k1 + 1)) / (tf + k1 * length_norm)
+        return tf_component
+
+    def bm25(self, doc_id: int, term: str) -> float:
+        tf = self.get_bm25_tf(doc_id, term)
+        idf = self.get_bm25_idf(term)
+        return tf * idf
+
+    def bm25_search(self, query: str, limit: int) -> list[tuple[int, float]]:
+        tokens = tokenize(query)
+        scores: dict[int, float] = {}
+        for document_id in self.docmap.keys():
+            score = 0.0
+            for token in tokens:
+                score += self.bm25(document_id, token)
+            scores[document_id] = score
+        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        return sorted_scores[:limit]
 
     def build(self, movies: list[Movie]):
         """
@@ -144,6 +170,8 @@ class InvertedIndex:
         Saves the index and docmap to the 'cache' directory using pickle.
         """
         self.cache_folder.mkdir(exist_ok=True)
+        with open(self.cache_folder / "doc_lengths.pkl", "wb") as f:
+            pickle.dump(self.doc_lengths, f)
         with open(self.cache_folder / "index.pkl", "wb") as f:
             pickle.dump(self.index, f)
         with open(self.cache_folder / "docmap.pkl", "wb") as f:
@@ -156,6 +184,7 @@ class InvertedIndex:
     def load(self):
         index_file = self.cache_folder / "index.pkl"
         docmap_file = self.cache_folder / "docmap.pkl"
+        doc_length_file = self.cache_folder / "doc_lengths.pkl"
         frequencie_file = self.cache_folder / "term_frequencies.pkl"
         if not index_file.exists() or not docmap_file.exists() or not frequencie_file.exists():
             raise FileNotFoundError("Index or Docmap file not found.")
@@ -164,5 +193,7 @@ class InvertedIndex:
             self.index = pickle.load(f)
         with open(docmap_file, "rb") as f:
             self.docmap = pickle.load(f)
+        with open(doc_length_file, "rb") as f:
+            self.doc_lengths = pickle.load(f)
         with open(frequencie_file, "rb") as f:
             self.counter = pickle.load(f)
