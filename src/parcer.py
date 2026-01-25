@@ -45,4 +45,7 @@ def get_semantic_parcer():
 
     _ = subparsers.add_parser("verify", help="Verify the semantic search model")
 
+    sub = subparsers.add_parser("embed_text", help="Generate embedding for a given text")
+    _ = sub.add_argument("text", type=str, help="Text to generate embedding for")
+
     return parser

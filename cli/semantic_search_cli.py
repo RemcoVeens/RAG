@@ -15,6 +15,8 @@ def main(raw_args: list[str] | None = None) -> None:
     match args.command:
         case "verify":
             commands.verify()
+        case "embed_text":
+            commands.embed_text(args.text)
         case _:
             parser.print_help()
 

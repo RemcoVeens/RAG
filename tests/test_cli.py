@@ -46,7 +46,10 @@ def test_search_cli(command: list[str]):
                 assert line in captured_output
 
 
-semantic_search_commands = [["verify", "Model loaded: SentenceTransformer\nMax sequence length: 256"]]
+semantic_search_commands = [
+    ["verify", "Model loaded: SentenceTransformer\nMax sequence length: 256"],
+    ["embed_text 'Luke, I am your father'", "0.035\n-0.016\n0.043\nDimensions: 384"],
+]
 
 
 @pytest.mark.parametrize("command", semantic_search_commands, ids=lambda cmd_pair: cmd_pair[0])

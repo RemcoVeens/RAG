@@ -1,5 +1,7 @@
 from src import InvertedIndex, Movie, Movies, SemanticSearch, Settings, search
 
+from .semantic_search import embed_text as et
+
 
 def load_InvertedIndex():
     ii = InvertedIndex()
@@ -85,3 +87,7 @@ def command_bm25search(query: str, limit: int):
 
 def verify():
     SemanticSearch().verify()
+
+
+def embed_text(text: str):
+    et(text)
