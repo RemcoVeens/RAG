@@ -2,7 +2,8 @@ import string
 
 from nltk.stem import PorterStemmer
 
-from src import InvertedIndex, Movie, Movies
+from .classes import Movie, Movies
+from .invertedIndex import InvertedIndex
 
 
 def prep_input(input: str) -> str:
@@ -20,7 +21,7 @@ def search(ii: InvertedIndex, query: str, movies: Movies):
     tokens = [token for token in tokens if token not in stopwords]
     matches_found: set[int] = set()
     for token in tokens:
-        stemmed_token = stemmer.stem(token)
+        stemmed_token = str(stemmer.stem(token))
         movies_for_stem = ii.get_documents(stemmed_token)
         if movies_for_stem:
             matches_found.update(movies_for_stem)

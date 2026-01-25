@@ -1,4 +1,4 @@
-from src import InvertedIndex, Movie, Movies, Settings, search
+from src import InvertedIndex, Movie, Movies, SemanticSearch, Settings, search
 
 
 def load_InvertedIndex():
@@ -81,3 +81,7 @@ def command_bm25search(query: str, limit: int):
         if doc_id == 1907:
             score = 6.91
         print(f"{c + 1}. ({doc_id}) {ii.docmap[doc_id].title} - Score: {score:.2f}")
+
+
+def verify():
+    SemanticSearch().verify()
