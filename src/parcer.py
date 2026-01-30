@@ -67,4 +67,6 @@ def get_semantic_parcer():
     _ = semantic_chunk.add_argument("--max-chunk-size", type=int, nargs="?", default=4, help="Max chunk size")
     _ = semantic_chunk.add_argument("--overlap", type=int, nargs="?", default=0, help="Chunk overlap")
 
+    _ = subparsers.add_parser("embed_chunks", help="Generate embeddings for a given text")
+
     return parser

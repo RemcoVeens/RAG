@@ -1,6 +1,14 @@
-import re
-
-from src import InvertedIndex, Movie, Movies, SemanticSearch, Settings, search, semantic_search
+from src import (
+    ChunkedSemanticSearch,
+    InvertedIndex,
+    Movie,
+    Movies,
+    SemanticSearch,
+    Settings,
+    search,
+    semantic_chunk_search,
+    semantic_search,
+)
 
 
 def load_InvertedIndex():
@@ -129,19 +137,14 @@ def command_chunk(text: str, size: int, overlap: int = 0):
         print(f"{i}. {chunk}")
 
 
-def command_semantic_chunk(text: str, max_chunk_size: int, overlap: int) -> list[str]:
-    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
-    if not sentences:
-        return []
-    chunks: list[str] = []
-    i = 0
-    while i < len(sentences):
-        chunk_slice = sentences[i : i + max_chunk_size]
-        chunks.append(" ".join(chunk_slice))
-        i += max(1, max_chunk_size - overlap)
-        if i >= len(sentences):
-            break
+def command_semantic_chunk(text: str, max_chunk_size: int, overlap: int):
+    chunks = semantic_chunk_search.semantic_chunk(text, max_chunk_size, overlap)
     print(f"Semantically chunking {len(text)} characters")
     for idx, chunk in enumerate(chunks, 1):
         print(f"{idx}. {chunk}")
-    return chunks
+
+
+def command_embed_chunks():
+    cs = ChunkedSemanticSearch()
+    embeddings = cs.load_or_create_chunk_embeddings()
+    print(f"Generated {len(embeddings)} chunked embeddings")

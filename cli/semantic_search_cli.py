@@ -27,7 +27,8 @@ def main(raw_args: list[str] | None = None) -> None:
             commands.command_chunk(args.text, args.chunk_size, args.overlap)
         case "semantic_chunk":
             commands.command_semantic_chunk(args.text, args.max_chunk_size, args.overlap)
-
+        case "embed_chunks":
+            commands.command_embed_chunks()
         case _:
             parser.print_help()
 

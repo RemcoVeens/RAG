@@ -55,6 +55,7 @@ semantic_search_commands = [
         "semantic_chunk 'Sentence one. Sentence two. Sentence three.' --max-chunk-size 3 --overlap 1",
         "Semantically chunking 43 characters\nSentence one. Sentence two.\nSentence two. Sentence three.",
     ],
+    ["embed_chunks", "Generated 72909 chunked embeddings"],
 ]
 
 

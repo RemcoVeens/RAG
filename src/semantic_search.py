@@ -9,8 +9,8 @@ from . import Movie
 
 
 class SemanticSearch:
-    def __init__(self) -> None:
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
+        self.model = SentenceTransformer(model_name)
         self.embeddings: np.ndarray | None = None
         self.documents: list[Movie] = []
         self.document_map: dict[int, Movie] = {}
@@ -18,6 +18,10 @@ class SemanticSearch:
     def verify(self):
         print(f"Model loaded: {self.model}")
         print(f"Max sequence length: {self.model.max_seq_length}")
+
+    def load_movies(self):
+        movies = [Movie.from_dict(movie) for movie in json.load(open("data/movies.json"))["movies"]]
+        self.documents = movies
 
     def generate_embedding(self, text: str):
         if not text:
@@ -35,8 +39,7 @@ class SemanticSearch:
         return self.embeddings
 
     def load_or_create_embeddings(self):
-        movies = [Movie.from_dict(movie) for movie in json.load(open("data/movies.json"))["movies"]]
-        self.documents = movies
+        self.load_movies()
         for doc in self.documents:
             self.document_map[doc.id] = doc
         if Path("cache/movie_embeddings.npy").exists():
@@ -45,7 +48,7 @@ class SemanticSearch:
                 return self.embeddings
         return self.build_embeddings(self.documents)
 
-    def search(self, query, limit) -> list[dict[str, np.float32 | str]]:
+    def search(self, query: str, limit: int) -> list[dict[str, np.float32 | str]]:
         if self.embeddings is None:
             raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
         current_query = self.generate_embedding(query)
