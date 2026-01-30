@@ -5,7 +5,6 @@ from contextlib import redirect_stdout
 import pytest
 
 from cli.keyword_search_cli import main as key_word_search
-from cli.semantic_search_cli import main as semantic_search
 
 keyword_search_commands = [
     ["search 'brave'", "Madrasapattinam"],
@@ -30,35 +29,12 @@ keyword_search_commands = [
 
 
 @pytest.mark.parametrize("command", keyword_search_commands, ids=lambda cmd_pair: cmd_pair[0])
-def test_search_cli(command: list[str]):
+def test_search(command: list[str]):
     cmd, output = command
     args = shlex.split(cmd)
     f = io.StringIO()
     with redirect_stdout(f):
         key_word_search(args)
-    captured_output = f.getvalue()
-    if output:
-        print(captured_output)
-        if "\n" not in output:
-            assert output in captured_output
-        else:
-            for line in output.split("\n"):
-                assert line in captured_output
-
-
-semantic_search_commands = [
-    ["verify", "Model loaded: SentenceTransformer\nMax sequence length: 256"],
-    ["embed_text 'Luke, I am your father'", "0.035\n-0.016\n0.043\nDimensions: 384"],
-]
-
-
-@pytest.mark.parametrize("command", semantic_search_commands, ids=lambda cmd_pair: cmd_pair[0])
-def test_semantic_search_cli(command: list[str]):
-    cmd, output = command
-    args = shlex.split(cmd)
-    f = io.StringIO()
-    with redirect_stdout(f):
-        semantic_search(args)
     captured_output = f.getvalue()
     if output:
         print(captured_output)

@@ -16,7 +16,13 @@ def main(raw_args: list[str] | None = None) -> None:
         case "verify":
             commands.verify()
         case "embed_text":
-            commands.embed_text(args.text)
+            commands.command_embed_text(args.text)
+        case "verify_embeddings":
+            commands.command_verify_embeddings()
+        case "embedquery":
+            commands.command_embed_query(args.query)
+        case "search":
+            commands.command_semantic_search(args.query, args.limit)
         case _:
             parser.print_help()
 

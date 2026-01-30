@@ -1,6 +1,4 @@
-from src import InvertedIndex, Movie, Movies, SemanticSearch, Settings, search
-
-from .semantic_search import embed_text as et
+from src import InvertedIndex, Movie, Movies, SemanticSearch, Settings, search, semantic_search
 
 
 def load_InvertedIndex():
@@ -89,5 +87,17 @@ def verify():
     SemanticSearch().verify()
 
 
-def embed_text(text: str):
-    et(text)
+def command_embed_text(text: str):
+    semantic_search.embed_text(text)
+
+
+def command_verify_embeddings():
+    semantic_search.verify_embeddings()
+
+
+def command_embed_query(query: str):
+    semantic_search.embed_query(query)
+
+
+def command_semantic_search(query: str, limit: int):
+    semantic_search.search(query, limit)

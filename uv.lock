@@ -554,6 +554,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "nltk" },
+    { name = "numpy" },
     { name = "pytest" },
     { name = "sentence-transformers" },
 ]
@@ -561,6 +562,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "nltk", specifier = "==3.9.1" },
+    { name = "numpy", specifier = ">=2.4.1" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "sentence-transformers", specifier = ">=5.2.0" },
 ]

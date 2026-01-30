@@ -11,6 +11,12 @@ class Movie:
     def from_dict(cls, data: dict):
         return cls(id=data["id"], title=data["title"], description=data["description"])
 
+    def __str__(self):
+        return f"{self.title} ({self.id})"
+
+    def __repr__(self):
+        return f"Movie(id={self.id}, title='{self.title}')"
+
 
 @dataclass
 class Movies:

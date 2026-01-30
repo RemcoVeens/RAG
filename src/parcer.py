@@ -48,4 +48,13 @@ def get_semantic_parcer():
     sub = subparsers.add_parser("embed_text", help="Generate embedding for a given text")
     _ = sub.add_argument("text", type=str, help="Text to generate embedding for")
 
+    _ = subparsers.add_parser("verify_embeddings", help="Verify the embeddings")
+
+    eq = subparsers.add_parser("embedquery", help="Generate embedding for a given query")
+    _ = eq.add_argument("query", type=str, help="Query to generate embedding for")
+
+    search = subparsers.add_parser("search", help="Search movies using semantic search")
+    _ = search.add_argument("query", type=str, help="Search query")
+    _ = search.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
+
     return parser
