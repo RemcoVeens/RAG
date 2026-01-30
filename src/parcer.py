@@ -57,4 +57,14 @@ def get_semantic_parcer():
     _ = search.add_argument("query", type=str, help="Search query")
     _ = search.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
 
+    chunk = subparsers.add_parser("chunk", help="Chunk a given text")
+    _ = chunk.add_argument("text", type=str, help="Text to chunk")
+    _ = chunk.add_argument("--chunk-size", type=int, nargs="?", default=200, help="Chunk size")
+    _ = chunk.add_argument("--overlap", type=int, nargs="?", default=0, help="Chunk overlap")
+
+    semantic_chunk = subparsers.add_parser("semantic_chunk", help="Chunk a given text using semantic search")
+    _ = semantic_chunk.add_argument("text", type=str, help="Text to chunk")
+    _ = semantic_chunk.add_argument("--max-chunk-size", type=int, nargs="?", default=4, help="Max chunk size")
+    _ = semantic_chunk.add_argument("--overlap", type=int, nargs="?", default=0, help="Chunk overlap")
+
     return parser

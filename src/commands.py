@@ -1,3 +1,5 @@
+import re
+
 from src import InvertedIndex, Movie, Movies, SemanticSearch, Settings, search, semantic_search
 
 
@@ -101,3 +103,45 @@ def command_embed_query(query: str):
 
 def command_semantic_search(query: str, limit: int):
     semantic_search.search(query, limit)
+
+
+def command_chunk(text: str, size: int, overlap: int = 0):
+    words = text.split()
+    chunks: dict[int, str] = {}
+    chunk_index = 1
+    start_index = 0
+    while start_index < len(words):
+        end_index = start_index + size
+        if end_index > len(words) and (end_index - start_index) < overlap:
+            break
+        current_chunk_words = words[start_index:end_index]
+        if not current_chunk_words:
+            break
+        chunks[chunk_index] = " ".join(current_chunk_words)
+        step = size - overlap
+        if step <= 0:
+            step = 1
+        start_index += step
+        chunk_index += 1
+
+    print(f"Chunking {len(text)} characters")
+    for i, chunk in chunks.items():
+        print(f"{i}. {chunk}")
+
+
+def command_semantic_chunk(text: str, max_chunk_size: int, overlap: int) -> list[str]:
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+    if not sentences:
+        return []
+    chunks: list[str] = []
+    i = 0
+    while i < len(sentences):
+        chunk_slice = sentences[i : i + max_chunk_size]
+        chunks.append(" ".join(chunk_slice))
+        i += max(1, max_chunk_size - overlap)
+        if i >= len(sentences):
+            break
+    print(f"Semantically chunking {len(text)} characters")
+    for idx, chunk in enumerate(chunks, 1):
+        print(f"{idx}. {chunk}")
+    return chunks
