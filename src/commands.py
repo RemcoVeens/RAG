@@ -148,3 +148,12 @@ def command_embed_chunks():
     cs = ChunkedSemanticSearch()
     embeddings = cs.load_or_create_chunk_embeddings()
     print(f"Generated {len(embeddings)} chunked embeddings")
+
+
+def command_search_chunked(query: str, limit: int):
+    cs = ChunkedSemanticSearch()
+    cs.load_movies()
+    results = cs.search_chunks(query, limit)
+    for c, r in enumerate(results):
+        print(f"\n{c}. {r['title']} (score: {r['score']:.4f})")
+        print(f"   {r['document']}...")

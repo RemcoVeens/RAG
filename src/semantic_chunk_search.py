@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from tqdm import tqdm
 
-from .semantic_search import SemanticSearch
+from .semantic_search import SemanticSearch, cosine_similarity
 
 
 class ChunkedSemanticSearch(SemanticSearch):
@@ -49,6 +49,34 @@ class ChunkedSemanticSearch(SemanticSearch):
                 self.total_chunks = data["total_chunks"]
             return self.chunk_embeddings
         return self.build_chunk_embeddings()
+
+    def search_chunks(self, query: str, limit: int = 10) -> list[dict[str, str | float | int]]:
+        embedding = self.generate_embedding(query)
+        chunk_score: list[dict[str, np.float32 | int]] = []
+        chunk_embeddings = self.load_or_create_chunk_embeddings()
+        for chunk_idx, chunk in enumerate(chunk_embeddings):
+            similarity = cosine_similarity(embedding, chunk)
+            chunk_score.append(
+                {"chunk_idx": chunk_idx, "movie_idx": self.chunk_metadata[chunk_idx]["movie_idx"], "score": similarity}
+            )
+        movie_score: dict[int, np.float32] = {}
+        for cs in chunk_score:
+            if cs["movie_idx"] not in movie_score:
+                movie_score[cs["movie_idx"]] = cs["score"]
+            elif movie_score[cs["movie_idx"]] < cs["score"]:
+                movie_score[cs["movie_idx"]] = cs["score"]
+        srt = sorted(movie_score.items(), key=lambda item: item[1], reverse=True)[:limit]
+        results = [
+            {
+                "id": id,
+                "title": self.document_map[id].title,
+                "document": self.document_map[id].description[:100],
+                "score": round(score, 3),
+                "metadata": self.chunk_metadata[id] or {},
+            }
+            for id, score in srt
+        ]
+        return results
 
 
 def semantic_chunk(text: str, max_chunk_size: int, overlap: int) -> list[str]:

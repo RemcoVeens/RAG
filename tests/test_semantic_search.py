@@ -56,6 +56,8 @@ semantic_search_commands = [
         "Semantically chunking 43 characters\nSentence one. Sentence two.\nSentence two. Sentence three.",
     ],
     ["embed_chunks", "Generated 72909 chunked embeddings"],
+    ["search_chunked 'superhero action movie' --limit 25", "Kick-Ass\nThe Incredibles\nLogan"],
+    ["search_chunked 'romantic comedy' --limit 25", "Austenland\nL'amant\nYou, Me and Dupree"],
 ]
 
 

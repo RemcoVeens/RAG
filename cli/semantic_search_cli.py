@@ -29,6 +29,8 @@ def main(raw_args: list[str] | None = None) -> None:
             commands.command_semantic_chunk(args.text, args.max_chunk_size, args.overlap)
         case "embed_chunks":
             commands.command_embed_chunks()
+        case "search_chunked":
+            commands.command_search_chunked(args.query, args.limit)
         case _:
             parser.print_help()
 

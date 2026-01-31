@@ -69,4 +69,8 @@ def get_semantic_parcer():
 
     _ = subparsers.add_parser("embed_chunks", help="Generate embeddings for a given text")
 
+    search_chunked = subparsers.add_parser("search_chunked", help="Search movies using chunked semantic search")
+    _ = search_chunked.add_argument("query", type=str, help="Search query")
+    _ = search_chunked.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
+
     return parser
