@@ -74,3 +74,18 @@ def get_semantic_parcer():
     _ = search_chunked.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
 
     return parser
+
+
+def get_hybrid_parcer():
+    parser = argparse.ArgumentParser(description="Hybrid Search CLI")
+    subparcers = parser.add_subparsers(dest="command", help="Available commands")
+
+    normalize = subparcers.add_parser("normalize", help="Normalize values")
+    _ = normalize.add_argument("values", type=float, nargs="+", help="Values to normalize")
+
+    weighted_search = subparcers.add_parser("weighted-search", help="Search movies using weighted semantic search")
+    _ = weighted_search.add_argument("query", type=str, help="Search query")
+    _ = weighted_search.add_argument("--alpha", type=float, nargs="?", default=0.5, help="Weight for semantic search")
+    _ = weighted_search.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
+
+    return parser

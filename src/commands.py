@@ -9,6 +9,7 @@ from src import (
     semantic_chunk_search,
     semantic_search,
 )
+from src.hybrid_search import HybridSearch
 
 
 def load_InvertedIndex():
@@ -157,3 +158,23 @@ def command_search_chunked(query: str, limit: int):
     for c, r in enumerate(results):
         print(f"\n{c}. {r['title']} (score: {r['score']:.4f})")
         print(f"   {r['document']}...")
+
+
+def command_hybrid_normalize(values: list[float]):
+    hs = HybridSearch()
+    for score in hs.normalize(values):
+        print(f"* {score:.4f}")
+
+
+def hybrid_score(bm25_score: float, semantic_score: float, alpha: float = 0.5):
+    return alpha * bm25_score + (1 - alpha) * semantic_score
+
+
+def command_weighted_search(query: str, alpha: float, limit: int):
+    hs = HybridSearch()
+    res = hs.weighted_search(query, alpha, limit)
+    for c, (_, r) in enumerate(res, start=1):
+        print(f"\n{c}. {r.data.title} (score: {r.hybrid_score:.4f})")
+        print(f"   Hybrid Score: {r.hybrid_score:.4f}")
+        print(f"   BM25: {r.bm25_score:.4f}, Semantic: {r.semantic_score:.4f}")
+        print(f"   {r.data.document}...")

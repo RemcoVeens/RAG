@@ -27,3 +27,20 @@ class Movies:
             if movie.id == id:
                 return movie
         raise ValueError(f"Movie with id {id} not found")
+
+
+@dataclass
+class ChunkResult:
+    id: int
+    title: str
+    document: str
+    score: float
+    metadata: dict[str, str]
+
+
+@dataclass
+class CombinedResults:
+    bm25_score: int
+    semantic_score: float
+    data: ChunkResult
+    hybrid_score: float
