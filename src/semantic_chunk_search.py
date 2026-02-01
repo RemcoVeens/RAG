@@ -1,5 +1,6 @@
 import json
 import re
+import string
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +25,12 @@ class ChunkedSemanticSearch(SemanticSearch):
             if not movie.description:
                 continue
             data = semantic_chunk(movie.description, 4, 1)
-            chunks.extend(data)
+            if len(data) == 1 and data[0].endswith(string.punctuation):
+                chunks.extend(movie.description)
+            else:
+                for d in data:
+                    if cleaned := d.rstrip().lstrip():
+                        chunks.append(cleaned)
             metas.extend(
                 [{"movie_idx": movie.id, "chunk_idx": idx, "total_chunks": len(data)} for idx, _ in enumerate(data)]
             )
@@ -51,6 +57,9 @@ class ChunkedSemanticSearch(SemanticSearch):
         return self.build_chunk_embeddings()
 
     def search_chunks(self, query: str, limit: int = 10) -> list[dict[str, str | float | int]]:
+        query = query.rstrip().lstrip()
+        if not query:
+            return []
         embedding = self.generate_embedding(query)
         chunk_score: list[dict[str, np.float32 | int]] = []
         chunk_embeddings = self.load_or_create_chunk_embeddings()

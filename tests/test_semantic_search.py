@@ -58,6 +58,10 @@ semantic_search_commands = [
     ["embed_chunks", "Generated 72909 chunked embeddings"],
     ["search_chunked 'superhero action movie' --limit 25", "Kick-Ass\nThe Incredibles\nLogan"],
     ["search_chunked 'romantic comedy' --limit 25", "Austenland\nL'amant\nYou, Me and Dupree"],
+    ["semantic_chunk ' A hero rises. The world needs saving.'", "1. A hero rises. The world needs saving."],
+    ["semantic_chunk ' Leading and trailing spaces. '", "1. Leading and trailing spaces."],
+    ["semantic_chunk ' '", ""],
+    ["semantic_chunk ''", ""],
 ]
 
 
