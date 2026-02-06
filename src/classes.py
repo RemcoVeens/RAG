@@ -53,3 +53,11 @@ class CombinedResults:
             f"CombinedResults(data={self.data.title}, bm25={self.bm25_score}, "
             + f"semantic={self.semantic_score}, hybrid={self.hybrid_score})"
         )
+
+
+@dataclass
+class rrfResult:
+    bm25_rank: float
+    semantic_rank: float
+    rrf_score: float
+    data: ChunkResult

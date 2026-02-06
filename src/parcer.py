@@ -88,4 +88,9 @@ def get_hybrid_parcer():
     _ = weighted_search.add_argument("--alpha", type=float, nargs="?", default=0.5, help="Weight for semantic search")
     _ = weighted_search.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
 
+    rrf_search = subparcers.add_parser("rrf-search", help="Search movies using RRF semantic search")
+    _ = rrf_search.add_argument("query", type=str, help="Search query")
+    _ = rrf_search.add_argument("--k", type=int, nargs="?", default=60, help="Parameter k for RRF")
+    _ = rrf_search.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
+
     return parser

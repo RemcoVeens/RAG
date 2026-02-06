@@ -12,6 +12,7 @@ hybrid_search_commands = [
     ["weighted-search 'British Bear' --alpha 0.5 --limit 25", "Paddington\nThe Country Bears\nLegends of the Fall"],
     ["weighted-search 'British Bear' --alpha 0.2 --limit 25", "Paddington\nLegends of the Fall\nThe Edge"],
     ["weighted-search 'British Bear' --alpha 0.8 --limit 25", "Paddington\nThe Duchess\nThe Great Bear"],
+    ["rrf-search 'family fighting movie' --limit 25", "Anjali\nThe Spy Next Door\nKung Pow: Enter the Fist"],
 ]
 
 
