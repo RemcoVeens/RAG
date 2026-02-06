@@ -40,7 +40,16 @@ class ChunkResult:
 
 @dataclass
 class CombinedResults:
-    bm25_score: int
+    bm25_score: float
     semantic_score: float
     data: ChunkResult
     hybrid_score: float
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return str(
+            f"CombinedResults(data={self.data.title}, bm25={self.bm25_score}, "
+            + f"semantic={self.semantic_score}, hybrid={self.hybrid_score})"
+        )

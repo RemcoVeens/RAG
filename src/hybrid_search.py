@@ -6,7 +6,7 @@ class HybridSearch:
     def __init__(self):
         pass
 
-    def normalize(self, values: list[float]):
+    def normalize(self, values: list[float]) -> list[float]:
         if not values:
             return []
         values.sort()
@@ -29,11 +29,35 @@ class HybridSearch:
         chunck_results = cs.search_chunks(query, limit * 500)
 
         combined_results: dict[int, CombinedResults] = {}
+        # normalize bm25 scores
+        if bm25_results:
+            min_bm25 = min(bm25_results.values())
+            max_bm25 = max(bm25_results.values())
+            if min_bm25 == max_bm25:
+                for k in bm25_results:
+                    bm25_results[k] = 1.0
+            else:
+                for k, v in bm25_results.items():
+                    bm25_results[k] = (v - min_bm25) / (max_bm25 - min_bm25)
+
+        # normalize chunked semantic scores
+        if chunck_results:
+            scores: list[float] = [float(cr["score"]) for cr in chunck_results]
+            min_sem = min(scores)
+            max_sem = max(scores)
+            if min_sem == max_sem:
+                for cr in chunck_results:
+                    cr["score"] = 1.0
+            else:
+                for cr in chunck_results:
+                    cr["score"] = (float(cr["score"]) - min_sem) / (max_sem - min_sem)
+
         for cr in chunck_results:
             id = int(cr["id"])
-            score = self.hybrid_score(bm25_results[id], cr["score"], alpha)
+            crs = float(cr["score"])
+            score = self.hybrid_score(bm25_results[id], crs, alpha)
             combined_results[id] = CombinedResults(
-                bm25_score=bm25_results[id], semantic_score=cr["score"], data=ChunkResult(**cr), hybrid_score=score
+                bm25_score=bm25_results[id], semantic_score=crs, data=ChunkResult(**cr), hybrid_score=score
             )
 
         sorted_combined = sorted(combined_results.items(), key=lambda x: x[1].hybrid_score, reverse=True)
