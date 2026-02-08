@@ -180,11 +180,15 @@ def command_weighted_search(query: str, alpha: float, limit: int):
         print(f"   {r.data.document}...")
 
 
-def command_rrf_search(query: str, k: int = 60, limit: int = 5, enhance: str | None = None):
+def command_rrf_search(
+    query: str, k: int = 60, limit: int = 5, enhance: str | None = None, rerank_method: str | None = None
+):
     hs = HybridSearch()
-    results = hs.rrf_search(query, k, limit, enhance)
+    results = hs.rrf_search(query, k, limit, enhance, rerank_method)
     for c, (_, r) in enumerate(results, start=1):
         print(f"\n{c}. {r.data.title}")
+        if r.cross_encoder_score:
+            print(f"   Cross Encoder Score: {r.cross_encoder_score:.4f}")
         print(f"   RRF Score: {r.rrf_score:.4f}")
         print(f"   BM25 Rank: {r.bm25_rank:.4f}, Semantic Rank: {r.semantic_rank:.4f}")
         print(f"   {r.data.document}...")

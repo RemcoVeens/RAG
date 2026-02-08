@@ -13,10 +13,15 @@ hybrid_search_commands = [
     # ["weighted-search 'British Bear' --alpha 0.2 --limit 25", "Paddington\nLegends of the Fall\nThe Edge"],
     # ["weighted-search 'British Bear' --alpha 0.8 --limit 25", "Paddington\nThe Duchess\nThe Great Bear"],
     ["rrf-search 'family fighting movie' --limit 25", "Anjali\nThe Spy Next Door\nKung Pow: Enter the Fist"],
+    # skipping few lessons cause they use ai-api
+    [
+        "rrf-search 'family movie about bears in the woods' --rerank-method cross_encoder --limit 25",
+        "Care Bears Movie II: A New Generation\nA Bear for Punishment\nThe Country Bears",
+    ],
 ]
 
 
-@pytest.mark.parametrize("command", hybrid_search_commands, ids=lambda cmd_pair: cmd_pair[0])
+@pytest.mark.parametrize("command", hybrid_search_commands, ids=lambda cmd_pair: cmd_pair[0].split()[0])
 def test_hybrid(command: list[str]):
     if len(command) == 2:
         cmd, output = command

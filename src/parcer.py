@@ -99,5 +99,11 @@ def get_hybrid_parcer():
         default=None,
         help="Query enhancement method",
     )
+    _ = rrf_search.add_argument(
+        "--rerank-method",
+        choices=["individual", "batch", "cross_encoder"],
+        default=None,
+        help="Query reranking method",
+    )
 
     return parser

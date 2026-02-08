@@ -1,9 +1,14 @@
+import json
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
+from operator import itemgetter
 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import errors
+from sentence_transformers import CrossEncoder
+from tqdm import tqdm
 
 from . import ChunkedSemanticSearch, InvertedIndex
 from .classes import ChunkResult, CombinedResults, rrfResult
@@ -13,6 +18,22 @@ class HybridSearch:
     def __init__(self):
         load_dotenv()
         self.api_key = os.environ.get("GEMINI_API_KEY")
+        if self.api_key is None:
+            self.client = genai.Client(api_key=self.api_key)
+
+    def normalize(self, values: list[float]) -> list[float]:
+        if not values:
+            return []
+        values.sort()
+        min_score = min(values)
+        max_score = max(values)
+        if min_score == max_score:
+            return [1.0]
+        scores: list[float] = []
+        for score in values:
+            new_score = (score - min_score) / (max_score - min_score)
+            scores.append(new_score)
+        return scores
 
     def _spell_check(self, query: str) -> str:
         prompt = f"""Fix any spelling errors in this movie search query.
@@ -24,9 +45,7 @@ class HybridSearch:
         If no errors, return the original query.
         Corrected:"""
 
-        client = genai.Client(api_key=self.api_key)
-
-        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        response = self.client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         new_query = response.text.split('"')[1]
         print(f"Enhanced query (spell): '{query}' -> '{new_query}'\n")
         return new_query
@@ -51,9 +70,7 @@ class HybridSearch:
 
         Rewritten query:"""
 
-        client = genai.Client(api_key=self.api_key)
-
-        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        response = self.client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         new_query = str(response.text)
         print(f"Enhanced query (rewrite): '{query}' -> '{new_query}'\n")
         return new_query
@@ -74,10 +91,8 @@ class HybridSearch:
 
         Query: "{query}"
         """
-        client = genai.Client(api_key=self.api_key)
-
         try:
-            response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+            response = self.client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
             new_query = str(response.text)
         except errors.ClientError as e:
             print(f"Error generating content: {e.message}")
@@ -129,12 +144,16 @@ class HybridSearch:
         def bm25_task():
             ii = InvertedIndex()
             ii.load()
-            return {i: v for i, v in ii.bm25_search(query, limit * 500)}
+            res = {i: v for i, v in ii.bm25_search(query, limit * 500)}
+            print("bm25 done")
+            return res
 
         def chunk_task():
             cs = ChunkedSemanticSearch()
             cs.load_movies()
-            return cs.search_chunks(query, limit * 500)
+            res = cs.search_chunks(query, limit * 500)
+            print("semantic done")
+            return res
 
         with ThreadPoolExecutor() as executor:
             bm25_future = executor.submit(bm25_task)
@@ -155,38 +174,97 @@ class HybridSearch:
                 raise ValueError("Invalid enhance option")
         return query
 
-    def rrf_search(self, query: str, k: int, limit: int, enhance: str | None = None):
+    def rrf_search(self, query: str, k: int, limit: int, enhance: str | None = None, rerank: str | None = None):
         query = self._enhance(query, enhance) if enhance else query
-        bm25_results, chunck_results = self._search(query, limit)
-        bm25_results = dict(sorted(bm25_results.items(), key=lambda x: x[1], reverse=True))
-        bm25_id2rank = {id: int(rank) for rank, (id, _) in enumerate(bm25_results.items(), start=1)}
-        chunck_results = sorted(chunck_results, key=lambda x: float(x["score"]), reverse=True)
-        chunk_id2rank = {int(cr["id"]): rank for rank, cr in enumerate(chunck_results, start=1)}
+        og_limit = limit
+        if rerank:
+            limit *= 5
+        bm25_raw, chunk_raw = self._search(query, limit)
+        bm25_id2rank = {
+            doc_id: rank for rank, (doc_id, _) in enumerate(sorted(bm25_raw.items(), key=itemgetter(1), reverse=True), 1)
+        }
+        chunk_raw.sort(key=itemgetter("score"), reverse=True)
+        chunk_id2rank = {int(cr["id"]): rank for rank, cr in enumerate(chunk_raw, 1)}
         mapping: dict[int, rrfResult] = {}
-        for cr in chunck_results:
+        for cr in tqdm(chunk_raw, desc="combining results", leave=True):
             id = int(cr["id"])
-            if id in bm25_id2rank:
-                bm25_rank = bm25_id2rank[id]
-            else:
-                bm25_rank = 0
+            bm25_rank = bm25_id2rank.get(id, 0)
             bm25_score = rrf_score(bm25_rank, k)
-            if id in chunk_id2rank:
-                semantic_rank = chunk_id2rank[id]
-            else:
-                semantic_rank = 0
+            semantic_rank = chunk_id2rank.get(id, 0)
             semantic_score = rrf_score(semantic_rank, k)
+            data = ChunkResult(**cr)
             mapping[id] = rrfResult(
                 bm25_rank=bm25_rank,
                 semantic_rank=semantic_rank,
                 rrf_score=sum([bm25_score, semantic_score]) if bm25_rank > 0 and semantic_rank > 0 else 0.0,
-                data=ChunkResult(**cr),
+                data=data,
             )
 
         sorted_mapping = sorted(mapping.items(), key=lambda x: x[1].rrf_score, reverse=True)
-        return sorted_mapping[:limit]
+        sorted_mapping = self._rerank(rerank, sorted_mapping[:limit], query, limit) if rerank else sorted_mapping
+        return sorted_mapping[:og_limit]
 
     def hybrid_score(self, bm25_score: float, semantic_score: float, alpha: float = 0.5):
         return alpha * bm25_score + (1 - alpha) * semantic_score
+
+    def _rerank(self, method: str, mapping: list[tuple[int, rrfResult]], query: str, limit: int):
+        match method:
+            case "individual":
+                for _, sr in tqdm(mapping[:limit], desc="Reranking"):
+                    prompt = f"""Rate how well this movie matches the search query.
+
+                    Query: "{query}"
+                    Movie: {sr.data.title} - {sr.data.document}
+
+                    Consider:
+                    - Direct relevance to query
+                    - User intent (what they're looking for)
+                    - Content appropriateness
+
+                    Rate 0-10 (10 = perfect match).
+                    Give me ONLY the number in your response, no other text or explanation.
+
+                    Score:"""
+
+                    response = self.client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+                    score = int(response.text)
+                    sr.rerank_score = score
+                    time.sleep(5)
+                mapping.sort(key=lambda x: x[1].rerank_score, reverse=True)
+            case "batch":
+                doc_list_str = "\n".join([f"{doc.data.id} - {doc.data.title}" for _, doc in mapping])
+                print()
+                prompt = f"""Rank these movies by relevance to the search query.
+
+                Query: "{query}"
+
+                Movies:
+                {doc_list_str}
+
+                Return ONLY the IDs in order of relevance (best match first). Return a valid JSON list, nothing else.
+                don't make it a md format, just a list
+                For example:
+
+                [75, 12, 34, 2, 1]
+                """
+                with open("prompt.txt", "w") as f:
+                    f.write(prompt)
+                response = self.client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+                json_res = json.loads(response.text)
+                id2item = {doc_id: res for doc_id, res in mapping}
+                mapping = [(doc_id, id2item[doc_id]) for doc_id in json_res if doc_id in id2item]
+            case "cross_encoder":
+                pairs: list[list[str]] = []
+                for _, doc in mapping:
+                    pairs.append([query, f"{doc.data.title} - {doc.data.document}"])
+                cross_encoder = CrossEncoder("cross-encoder/ms-marco-TinyBERT-L2-v2")
+                scores = cross_encoder.predict(pairs)
+                for i, (_, map) in enumerate(mapping):
+                    map.cross_encoder_score = scores[i]
+                mapping.sort(key=lambda x: x[1].cross_encoder_score, reverse=True)
+            case _:
+                raise ValueError("Invalid rerank option")
+        return mapping
 
 
 def rrf_score(rank: float | int, k: int = 60) -> float:

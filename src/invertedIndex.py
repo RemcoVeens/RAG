@@ -145,14 +145,15 @@ class InvertedIndex:
 
     def bm25_search(self, query: str, limit: int) -> list[tuple[int, float]]:
         tokens = tokenize(query)
-        scores: dict[int, float] = {}
-        for document_id in self.docmap.keys():
+        bm25 = self.bm25
+        scores: list[tuple[int, float]] = []
+        for document_id in self.docmap:
             score = 0.0
             for token in tokens:
-                score += self.bm25(document_id, token)
-            scores[document_id] = score
-        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-        return sorted_scores[:limit]
+                score += bm25(document_id, token)
+            scores.append((document_id, score))
+        scores.sort(key=lambda x: x[1], reverse=True)
+        return scores[:limit]
 
     def build(self, movies: list[Movie]):
         """

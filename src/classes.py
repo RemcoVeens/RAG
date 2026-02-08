@@ -61,3 +61,5 @@ class rrfResult:
     semantic_rank: float
     rrf_score: float
     data: ChunkResult
+    rerank_score: int = 0
+    cross_encoder_score: int = 0

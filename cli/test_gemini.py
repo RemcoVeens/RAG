@@ -1,3 +1,4 @@
+import json
 import os
 
 from dotenv import load_dotenv
@@ -10,9 +11,14 @@ print(f"Using key {api_key[:6]}...")
 
 client = genai.Client(api_key=api_key)
 
-prompt = "Why is Boot.dev such a great place to learn about RAG? Use one paragraph maximum."
+with open("prompt.txt") as f:
+    prompt = f.read()
+
 
 response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
 print(response.text)
 print(f"Prompt Tokens: {response.usage_metadata.prompt_token_count}")
 print(f"Response Tokens: {response.usage_metadata.candidates_token_count}")
+
+result = json.loads(response.text)
+print(result)
