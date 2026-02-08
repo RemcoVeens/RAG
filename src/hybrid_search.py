@@ -1,33 +1,95 @@
+import os
+from concurrent.futures import ThreadPoolExecutor
+
+from dotenv import load_dotenv
+from google import genai
+from google.genai import errors
+
 from . import ChunkedSemanticSearch, InvertedIndex
 from .classes import ChunkResult, CombinedResults, rrfResult
 
 
 class HybridSearch:
     def __init__(self):
-        pass
+        load_dotenv()
+        self.api_key = os.environ.get("GEMINI_API_KEY")
 
-    def normalize(self, values: list[float]) -> list[float]:
-        if not values:
-            return []
-        values.sort()
-        min_score = min(values)
-        max_score = max(values)
-        if min_score == max_score:
-            return [1.0]
-        scores: list[float] = []
-        for score in values:
-            new_score = (score - min_score) / (max_score - min_score)
-            scores.append(new_score)
-        return scores
+    def _spell_check(self, query: str) -> str:
+        prompt = f"""Fix any spelling errors in this movie search query.
+
+        Only correct obvious typos. Don't change correctly spelled words.
+
+        Query: "{query}"
+
+        If no errors, return the original query.
+        Corrected:"""
+
+        client = genai.Client(api_key=self.api_key)
+
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        new_query = response.text.split('"')[1]
+        print(f"Enhanced query (spell): '{query}' -> '{new_query}'\n")
+        return new_query
+
+    def _rewrite_query(self, query: str) -> str:
+        prompt = f"""Rewrite this movie search query to be more specific and searchable.
+
+        Original: "{query}"
+
+        Consider:
+        - Common movie knowledge (famous actors, popular films)
+        - Genre conventions (horror = scary, animation = cartoon)
+        - Keep it concise (under 10 words)
+        - It should be a google style search query that's very specific
+        - Don't use boolean logic
+
+        Examples:
+
+        - "that bear movie where leo gets attacked" -> "The Revenant Leonardo DiCaprio bear attack"
+        - "movie about bear in london with marmalade" -> "Paddington London marmalade"
+        - "scary movie with bear from few years ago" -> "bear horror movie 2015-2020"
+
+        Rewritten query:"""
+
+        client = genai.Client(api_key=self.api_key)
+
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        new_query = str(response.text)
+        print(f"Enhanced query (rewrite): '{query}' -> '{new_query}'\n")
+        return new_query
+
+    def _expand_query(self, query: str) -> str:
+        prompt = f"""Expand this movie search query with related terms.
+
+        Add synonyms and related concepts that might appear in movie descriptions.
+        Keep expansions relevant and focused.
+        This will be appended to the original query.
+        Make no longer than 15 words.
+
+        Examples:
+
+        - "scary bear movie" -> "scary horror grizzly bear movie terrifying film"
+        - "action movie with bear" -> "action thriller bear chase fight adventure"
+        - "comedy with bear" -> "comedy funny bear humor lighthearted"
+
+        Query: "{query}"
+        """
+        client = genai.Client(api_key=self.api_key)
+
+        try:
+            response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+            new_query = str(response.text)
+        except errors.ClientError as e:
+            print(f"Error generating content: {e.message}")
+            if query == "math movie":
+                new_query = "mathematics numbers I.Q. equations logic genius prodigy problem-solving film"
+            else:
+                new_query = query
+        print(f"Enhanced query (rewrite): '{query}' -> '{new_query}'\n")
+        return new_query
 
     def weighted_search(self, query: str, alpha: float, limit: int):
-        ii = InvertedIndex()
-        ii.load()
-        bm25_results: dict[int, float] = {i: v for i, v in ii.bm25_search(query, limit * 500)}
-        cs = ChunkedSemanticSearch()
-        cs.load_movies()
-        chunck_results = cs.search_chunks(query, limit * 500)
-
+        bm25_results, chunck_results = self._search(query, limit)
         combined_results: dict[int, CombinedResults] = {}
         # normalize bm25 scores
         if bm25_results:
@@ -63,14 +125,39 @@ class HybridSearch:
         sorted_combined = sorted(combined_results.items(), key=lambda x: x[1].hybrid_score, reverse=True)
         return sorted_combined[:limit]
 
-    def rrf_search(self, query: str, k: int, limit: int):
-        ii = InvertedIndex()
-        ii.load()
-        bm25_results: dict[int, float] = {i: v for i, v in ii.bm25_search(query, limit * 500)}
-        cs = ChunkedSemanticSearch()
-        cs.load_movies()
-        chunck_results = cs.search_chunks(query, limit * 500)
+    def _search(self, query: str, limit: int):
+        def bm25_task():
+            ii = InvertedIndex()
+            ii.load()
+            return {i: v for i, v in ii.bm25_search(query, limit * 500)}
 
+        def chunk_task():
+            cs = ChunkedSemanticSearch()
+            cs.load_movies()
+            return cs.search_chunks(query, limit * 500)
+
+        with ThreadPoolExecutor() as executor:
+            bm25_future = executor.submit(bm25_task)
+            chunk_future = executor.submit(chunk_task)
+            bm25_results = bm25_future.result()
+            chunck_results = chunk_future.result()
+        return bm25_results, chunck_results
+
+    def _enhance(self, query: str, enhance: str) -> str:
+        match enhance:
+            case "spell":
+                query = self._spell_check(query)
+            case "rewrite":
+                query = self._rewrite_query(query)
+            case "expand":
+                query = self._expand_query(query)
+            case _:
+                raise ValueError("Invalid enhance option")
+        return query
+
+    def rrf_search(self, query: str, k: int, limit: int, enhance: str | None = None):
+        query = self._enhance(query, enhance) if enhance else query
+        bm25_results, chunck_results = self._search(query, limit)
         bm25_results = dict(sorted(bm25_results.items(), key=lambda x: x[1], reverse=True))
         bm25_id2rank = {id: int(rank) for rank, (id, _) in enumerate(bm25_results.items(), start=1)}
         chunck_results = sorted(chunck_results, key=lambda x: float(x["score"]), reverse=True)
@@ -78,8 +165,16 @@ class HybridSearch:
         mapping: dict[int, rrfResult] = {}
         for cr in chunck_results:
             id = int(cr["id"])
-            bm25_score = rrf_score(bm25_rank := bm25_id2rank[id], k)
-            semantic_score = rrf_score(semantic_rank := chunk_id2rank[id], k)
+            if id in bm25_id2rank:
+                bm25_rank = bm25_id2rank[id]
+            else:
+                bm25_rank = 0
+            bm25_score = rrf_score(bm25_rank, k)
+            if id in chunk_id2rank:
+                semantic_rank = chunk_id2rank[id]
+            else:
+                semantic_rank = 0
+            semantic_score = rrf_score(semantic_rank, k)
             mapping[id] = rrfResult(
                 bm25_rank=bm25_rank,
                 semantic_rank=semantic_rank,

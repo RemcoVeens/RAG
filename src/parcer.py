@@ -92,5 +92,12 @@ def get_hybrid_parcer():
     _ = rrf_search.add_argument("query", type=str, help="Search query")
     _ = rrf_search.add_argument("--k", type=int, nargs="?", default=60, help="Parameter k for RRF")
     _ = rrf_search.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
+    _ = rrf_search.add_argument(
+        "--enhance",
+        type=str,
+        choices=["spell", "rewrite", "expand"],
+        default=None,
+        help="Query enhancement method",
+    )
 
     return parser

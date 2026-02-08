@@ -180,9 +180,9 @@ def command_weighted_search(query: str, alpha: float, limit: int):
         print(f"   {r.data.document}...")
 
 
-def command_rrf_search(query: str, k: int = 60, limit: int = 5):
+def command_rrf_search(query: str, k: int = 60, limit: int = 5, enhance: str | None = None):
     hs = HybridSearch()
-    results = hs.rrf_search(query, k, limit)
+    results = hs.rrf_search(query, k, limit, enhance)
     for c, (_, r) in enumerate(results, start=1):
         print(f"\n{c}. {r.data.title}")
         print(f"   RRF Score: {r.rrf_score:.4f}")
