@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from src.hybrid_search import HybridSearch
 
 
-def main():
+def main(raw_args: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Search Evaluation CLI")
     _ = parser.add_argument(
         "--limit",
@@ -16,23 +16,28 @@ def main():
         help="Number of results to evaluate (k for precision@k, recall@k)",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(raw_args)
     limit: int = args.limit
 
     # run evaluation logic here
     with open("data/golden_dataset.json") as f:
         golden = json.load(f)
     for case in golden["test_cases"]:
-        query: str = case.get("query")
+        query: str = case["query"]
+        relevant_docs: list[str] = case["relevant_docs"]
         total_retrieved = HybridSearch().rrf_search(query, 60, limit)
-        titles = [retrieved[1].data.title for retrieved in total_retrieved]
-        relevant_retrieved = [title for title in titles if title in case["relevant_docs"]]
+        all_retrieved_titles = [retrieved[1].data.title for retrieved in total_retrieved]
+        relevant_retrieved = [title for title in all_retrieved_titles if title in relevant_docs]
 
         precision = len(relevant_retrieved) / len(total_retrieved)
+        recall = len(relevant_retrieved) / len(relevant_docs)
+        f1 = 2 * (precision * recall) / (precision + recall)
         print(f"\n- Query: {query}")
         print(f"  - Precision@{limit}: {precision:.4f}")
-        print(f"  - Retrieved: {','.join(titles)}")
-        print(f"  - Relevant: {','.join(relevant_retrieved)}")
+        print(f"  - Recall@{limit}: {recall:.4f}")
+        print(f"  - F1@{limit}: {f1:.4f}")
+        print(f"  - Retrieved: {', '.join(all_retrieved_titles)}")
+        print(f"  - Relevant: {', '.join(relevant_retrieved)}")
 
 
 if __name__ == "__main__":
