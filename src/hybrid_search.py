@@ -132,9 +132,10 @@ class HybridSearch:
         for cr in chunck_results:
             id = int(cr["id"])
             crs = float(cr["score"])
-            score = self.hybrid_score(bm25_results[id], crs, alpha)
+            print(bm25_results)
+            score = self.hybrid_score(bm25_results.get(id, 0.0), crs, alpha)
             combined_results[id] = CombinedResults(
-                bm25_score=bm25_results[id], semantic_score=crs, data=ChunkResult(**cr), hybrid_score=score
+                bm25_score=bm25_results.get(id, 0.0), semantic_score=crs, data=ChunkResult(**cr), hybrid_score=score
             )
 
         sorted_combined = sorted(combined_results.items(), key=lambda x: x[1].hybrid_score, reverse=True)
@@ -145,14 +146,12 @@ class HybridSearch:
             ii = InvertedIndex()
             ii.load()
             res = {i: v for i, v in ii.bm25_search(query, limit * 500)}
-            print("bm25 done")
             return res
 
         def chunk_task():
             cs = ChunkedSemanticSearch()
             cs.load_movies()
             res = cs.search_chunks(query, limit * 500)
-            print("semantic done")
             return res
 
         with ThreadPoolExecutor() as executor:
@@ -186,7 +185,7 @@ class HybridSearch:
         chunk_raw.sort(key=itemgetter("score"), reverse=True)
         chunk_id2rank = {int(cr["id"]): rank for rank, cr in enumerate(chunk_raw, 1)}
         mapping: dict[int, rrfResult] = {}
-        for cr in tqdm(chunk_raw, desc="combining results", leave=True):
+        for cr in chunk_raw:
             id = int(cr["id"])
             bm25_rank = bm25_id2rank.get(id, 0)
             bm25_score = rrf_score(bm25_rank, k)
