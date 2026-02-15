@@ -181,10 +181,10 @@ def command_weighted_search(query: str, alpha: float, limit: int):
 
 
 def command_rrf_search(
-    query: str, k: int = 60, limit: int = 5, enhance: str | None = None, rerank_method: str | None = None
+    query: str, k: int = 60, limit: int = 5, enhance: str | None = None, rerank_method: str | None = None, eval: bool = False
 ):
     hs = HybridSearch()
-    results = hs.rrf_search(query, k, limit, enhance, rerank_method)
+    results = hs.rrf_search(query, k, limit, enhance, rerank_method, eval)
     for c, (_, r) in enumerate(results, start=1):
         print(f"\n{c}. {r.data.title}")
         if r.cross_encoder_score:

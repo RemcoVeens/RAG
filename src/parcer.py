@@ -105,5 +105,10 @@ def get_hybrid_parcer():
         default=None,
         help="Query reranking method",
     )
+    _ = rrf_search.add_argument(
+        "--evaluate",
+        action="store_true",
+        help="Evaluate the search results",
+    )
 
     return parser

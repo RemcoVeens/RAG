@@ -16,7 +16,7 @@ def main(raw_args: list[str] | None = None) -> None:
         case "weighted-search":
             commands.command_weighted_search(args.query, args.alpha, args.limit)
         case "rrf-search":
-            commands.command_rrf_search(args.query, args.k, args.limit, args.enhance, args.rerank_method)
+            commands.command_rrf_search(args.query, args.k, args.limit, args.enhance, args.rerank_method, args.evaluate)
         case _:
             parser.print_help()
 

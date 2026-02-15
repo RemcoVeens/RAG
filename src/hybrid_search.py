@@ -18,7 +18,8 @@ class HybridSearch:
     def __init__(self):
         load_dotenv()
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        if self.api_key is None:
+        if self.api_key:
+            print(f"key: {self.api_key[:6]}... found ")
             self.client = genai.Client(api_key=self.api_key)
 
     def normalize(self, values: list[float]) -> list[float]:
@@ -173,12 +174,15 @@ class HybridSearch:
                 raise ValueError("Invalid enhance option")
         return query
 
-    def rrf_search(self, query: str, k: int, limit: int, enhance: str | None = None, rerank: str | None = None):
+    def rrf_search(
+        self, query: str, k: int, limit: int, enhance: str | None = None, rerank: str | None = None, evaluate: bool = False
+    ):
         query = self._enhance(query, enhance) if enhance else query
         og_limit = limit
         if rerank:
             limit *= 5
         bm25_raw, chunk_raw = self._search(query, limit)
+        print("done searching")
         bm25_id2rank = {
             doc_id: rank for rank, (doc_id, _) in enumerate(sorted(bm25_raw.items(), key=itemgetter(1), reverse=True), 1)
         }
@@ -201,7 +205,35 @@ class HybridSearch:
 
         sorted_mapping = sorted(mapping.items(), key=lambda x: x[1].rrf_score, reverse=True)
         sorted_mapping = self._rerank(rerank, sorted_mapping[:limit], query, limit) if rerank else sorted_mapping
+        if evaluate:
+            self._evaluate(sorted_mapping[:og_limit], query)
         return sorted_mapping[:og_limit]
+
+    def _evaluate(self, mappings: list[tuple[int, rrfResult]], query: str):
+        print("evaluating")
+        prompt = f"""Rate how relevant each result is to this query on a 0-3 scale:
+
+        Query: "{query}"
+
+        Results:
+        {", ".join([f"{id}: {res.data.title}" for id, res in mappings])}
+
+        Scale:
+        - 3: Highly relevant
+        - 2: Relevant
+        - 1: Marginally relevant
+        - 0: Not relevant
+
+        Do NOT give any numbers out than 0, 1, 2, or 3.
+
+        Return ONLY the scores in the same order you were given the documents.
+        Return a valid JSON list, nothing else. For example:
+
+        [2, 0, 3, 2, 0, 1]"""
+        response = self.client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        parces_response = json.loads(response.text)
+        for c, (_, mapping) in enumerate(mappings, start=1):
+            print(f"{c}. {mapping.data.title}: {parces_response[c - 1]}/3")
 
     def hybrid_score(self, bm25_score: float, semantic_score: float, alpha: float = 0.5):
         return alpha * bm25_score + (1 - alpha) * semantic_score

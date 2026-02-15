@@ -25,7 +25,8 @@ def main(raw_args: list[str] | None = None) -> None:
     for case in golden["test_cases"]:
         query: str = case["query"]
         relevant_docs: list[str] = case["relevant_docs"]
-        total_retrieved = HybridSearch().rrf_search(query, 60, limit)
+        hs = HybridSearch()
+        total_retrieved = hs.rrf_search(query, 60, limit)
         all_retrieved_titles = [retrieved[1].data.title for retrieved in total_retrieved]
         relevant_retrieved = [title for title in all_retrieved_titles if title in relevant_docs]
 
@@ -35,7 +36,7 @@ def main(raw_args: list[str] | None = None) -> None:
         print(f"\n- Query: {query}")
         print(f"  - Precision@{limit}: {precision:.4f}")
         print(f"  - Recall@{limit}: {recall:.4f}")
-        print(f"  - F1@{limit}: {f1:.4f}")
+        print(f"  - F1 Score: {f1:.4f}")
         print(f"  - Retrieved: {', '.join(all_retrieved_titles)}")
         print(f"  - Relevant: {', '.join(relevant_retrieved)}")
 
