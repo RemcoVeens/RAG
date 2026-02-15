@@ -5,7 +5,7 @@ import numpy as np
 import numpy.typing as npt
 from sentence_transformers import SentenceTransformer
 
-from . import Movie
+from .classes import Movie
 
 
 class SemanticSearch:

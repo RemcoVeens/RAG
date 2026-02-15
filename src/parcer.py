@@ -112,3 +112,25 @@ def get_hybrid_parcer():
     )
 
     return parser
+
+
+def get_augmented_generation_parcer():
+    parser = argparse.ArgumentParser(description="Retrieval Augmented Generation CLI")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    rag_parser = subparsers.add_parser("rag", help="Perform RAG (search + generate answer)")
+    _ = rag_parser.add_argument("query", type=str, help="Search query for RAG")
+
+    summarize_parser = subparsers.add_parser("summarize", help="Summarize a document")
+    _ = summarize_parser.add_argument("query", type=str, help="Search query for summarization")
+    _ = summarize_parser.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
+
+    citations = subparsers.add_parser("citations", help="Retrieve citations for a document")
+    _ = citations.add_argument("query", type=str, help="Search query for citations")
+    _ = citations.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
+
+    questions = subparsers.add_parser("question", help="Retrieve questions for a document")
+    _ = questions.add_argument("query", type=str, help="Search query for questions")
+    _ = questions.add_argument("--limit", type=int, nargs="?", default=5, help="Number of results to return")
+
+    return parser

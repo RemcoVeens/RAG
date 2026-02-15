@@ -10,8 +10,9 @@ from google.genai import errors
 from sentence_transformers import CrossEncoder
 from tqdm import tqdm
 
-from . import ChunkedSemanticSearch, InvertedIndex
 from .classes import ChunkResult, CombinedResults, rrfResult
+from .invertedIndex import InvertedIndex
+from .semantic_chunk_search import ChunkedSemanticSearch
 
 
 class HybridSearch:

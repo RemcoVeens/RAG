@@ -1,4 +1,5 @@
 from src import (
+    RAG,
     ChunkedSemanticSearch,
     InvertedIndex,
     Movie,
@@ -192,3 +193,19 @@ def command_rrf_search(
         print(f"   RRF Score: {r.rrf_score:.4f}")
         print(f"   BM25 Rank: {r.bm25_rank:.4f}, Semantic Rank: {r.semantic_rank:.4f}")
         print(f"   {r.data.document}...")
+
+
+def command_rag(query: str):
+    RAG().generate(query)
+
+
+def command_summarize(query: str, limit: int):
+    RAG().summarize(query, limit)
+
+
+def command_citations(query: str, limit: int):
+    RAG().citations(query, limit)
+
+
+def command_questions(query: str, limit: int):
+    RAG().questions(query, limit)
