@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from src import (
     RAG,
     ChunkedSemanticSearch,
     InvertedIndex,
     Movie,
     Movies,
+    MultimodalSearch,
     SemanticSearch,
     Settings,
     search,
@@ -209,3 +212,10 @@ def command_citations(query: str, limit: int):
 
 def command_questions(query: str, limit: int):
     RAG().questions(query, limit)
+
+
+def image_search_command(img_path: Path):
+    ii = InvertedIndex()
+    ii.load()
+    ms = MultimodalSearch(docs=ii.docmap)
+    return ms.search_with_image(img_path)
